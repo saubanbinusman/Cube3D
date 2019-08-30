@@ -66,9 +66,9 @@ Run the program and you will be shown a 3D Cube.
 
 Use the following keys to interact with the cube:
 
-| Key                   | Effect                                   |
-|:---------------------:|:----------------------------------------:|
-| Left/Right Arrow Keys | Translates/Rotates along X axis          |
-| Up/Down Arrow Keys    | Translates/Rotates along Y axis          |
-| Numpad +/-            | Translates/Rotates along Z axis          |
-| R                     | Toggles between Translate or Rotate Mode |
+| Key                   | Effect                                    |
+|:---------------------:|:-----------------------------------------:|
+| Left/Right Arrow Keys | Translates/Rotates along X axis           |
+| Up/Down Arrow Keys    | Translates/Rotates along Y axis           |
+| Numpad +/-            | Translates/Rotates along Z axis           |
+| R                     | Toggles between Translate and Rotate Mode |
