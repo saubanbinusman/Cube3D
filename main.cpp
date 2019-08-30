@@ -5,6 +5,10 @@
 
 using namespace std;
 
+#define X_AXIS 1
+#define Y_AXIS 2
+#define Z_AXIS 4
+
 // Utility Functions
 inline double mapDouble(double valToMap, double valMin, double valMax, double mappedMin, double mappedMax)
 {
@@ -282,53 +286,52 @@ struct Cube3D
 		}
 	}
 	
-	// Rotates the point (x,y,z) about the line through (a,b,c) with direction (unit) vector (u,v,w) by the angle theta (radians).
-	inline Vector3 rotate(double x, double y, double z, double a, double b, double c, double u, double v, double w, double theta)
+	// Rotates the point 'p' about the line through 'q' with direction (unit) vector 'd' by the angle theta (radians).
+	inline Vector3 rotate(const Vector3& p, const Vector3& q, const Vector3& d, double theta)
 	{
+		// For readability
+		double x = p.x, y = p.y, z = p.z;
+		double a = q.x, b = q.y, c = q.z;
+		double u = d.x, v = d.y, w = d.z;
+		
+		double t1 = u * x - v * y - w * z;  // Reusable Term 1
+		double t2 = 1.0 - cos(theta);  // Reusable Term 2
+		
 		return
 		{
-				(a * (v * v + w * w) - u * (b * v + c * w - u * x - v * y - w * z)) * (1 - cos(theta)) + x * cos(theta) + (-c * v + b * w - w * y + v * z) * sin(theta),
-				(b * (u * u + w * w) - v * (a * u + c * w - u * x - v * y - w * z)) * (1 - cos(theta)) + y * cos(theta) + (c * u - a * w + w * x - u * z) * sin(theta),
-				(c * (u * u + v * v) - w * (a * u + b * v - u * x - v * y - w * z)) * (1 - cos(theta)) + z * cos(theta) + (-b * u + a * v - v * x + u * y) * sin(theta)
+			(a * (v * v + w * w) - u * (b * v + c * w - t1)) * t2 + x * cos(theta) + (-c * v + b * w - w * y + v * z) * sin(theta),
+			(b * (u * u + w * w) - v * (a * u + c * w - t1)) * t2 + y * cos(theta) + (c * u - a * w + w * x - u * z) * sin(theta),
+			(c * (u * u + v * v) - w * (a * u + b * v - t1)) * t2 + z * cos(theta) + (-b * u + a * v - v * x + u * y) * sin(theta)
 		};
 	}
 	
-	void rotateAboutLocalX(double theta)
+	void rotateAbout(int axis, double theta)
 	{
-		Vector3 p1 = (point[0] + point[3] + point[4] + point[7]) / 4.0;
-		Vector3 p2 = (point[1] + point[2] + point[5] + point[6]) / 4.0;
-		Vector3 V = p2 - p1;
-		Vector3 U = V.getUnitVector();
+		Vector3 p1, p2;
 		
-		for (Vector3& p : point)
+		switch (axis)
 		{
-			p = rotate(p.x, p.y, p.z, p1.x, p1.y, p1.z, U.x, U.y, U.z, theta / 180.0 * M_PI);
+			case X_AXIS:
+				p1 = (point[0] + point[3] + point[4] + point[7]) / 4.0;
+				p2 = (point[1] + point[2] + point[5] + point[6]) / 4.0;
+				break;
+			
+			case Y_AXIS:
+				p1 = (point[0] + point[1] + point[4] + point[5]) / 4.0;
+				p2 = (point[2] + point[3] + point[6] + point[7]) / 4.0;
+				break;
+			
+			case Z_AXIS:
+				p1 = (point[0] + point[1] + point[2] + point[3]) / 4.0;
+				p2 = (point[4] + point[5] + point[6] + point[7]) / 4.0;
+				break;
 		}
-	}
-	
-	void rotateAboutLocalY(double theta)
-	{
-		Vector3 p1 = (point[0] + point[1] + point[4] + point[5]) / 4.0;
-		Vector3 p2 = (point[2] + point[3] + point[6] + point[7]) / 4.0;
-		Vector3 V = p2 - p1;
-		Vector3 U = V.getUnitVector();
+		
+		Vector3 d = (p2 - p1).getUnitVector();
 		
 		for (Vector3& p : point)
 		{
-			p = rotate(p.x, p.y, p.z, p1.x, p1.y, p1.z, U.x, U.y, U.z, theta / 180.0 * M_PI);
-		}
-	}
-	
-	void rotateAboutLocalZ(double theta)
-	{
-		Vector3 p1 = (point[0] + point[1] + point[2] + point[3]) / 4.0;
-		Vector3 p2 = (point[4] + point[5] + point[6] + point[7]) / 4.0;
-		Vector3 V = p2 - p1;
-		Vector3 U = V.getUnitVector();
-		
-		for (Vector3& p : point)
-		{
-			p = rotate(p.x, p.y, p.z, p1.x, p1.y, p1.z, U.x, U.y, U.z, theta / 180.0 * M_PI);
+			p = rotate(p, p1, d, theta / 180.0 * M_PI);
 		}
 	}
 };
@@ -369,12 +372,12 @@ void drawCube2D(const Cube2D& cube, SDL_Renderer* renderer)
 	
 	for (int i = 2, j = 6; i < 4 && j < 8; ++i, ++j)
 	{
-		wuLine(cube.point[i].x, cube.point[i].y, cube.point[j].x, cube.point[j].y, 0x00, 0x00, 0xFF, renderer);
+		wuLine(cube.point[i].x, cube.point[i].y, cube.point[j].x, cube.point[j].y, 0x00, 0x9F, 0xFF, renderer);
 	}
 	
 	for (int i = 0; i < 4; ++i)
 	{
-			wuLine(cube.point[i].x, cube.point[i].y, cube.point[i + 1 == 4 ? 0 : i + 1].x, cube.point[i + 1 == 4 ? 0 : i + 1].y, 0xFF, 0x00, 0x00, renderer);
+		wuLine(cube.point[i].x, cube.point[i].y, cube.point[i + 1 == 4 ? 0 : i + 1].x, cube.point[i + 1 == 4 ? 0 : i + 1].y, 0xFF, 0x00, 0x00, renderer);
 	}
 	
 	for (int i = 4; i < 8; ++i)
@@ -393,7 +396,7 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	
-	SDL_Window* mainWindow = SDL_CreateWindow("3D Cube", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 400, 400, NULL);
+	SDL_Window* mainWindow = SDL_CreateWindow("3D Cube", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 400, 400, 0x00);
 	
 	if (mainWindow == NULL)
 	{
@@ -449,37 +452,27 @@ int main(int argc, char** argv)
 					{
 						case SDLK_LEFT:
 							if (translate) cube.translate(Vector3(-0.25, 0.0, 0.0));
-							else cube.rotateAboutLocalY(-2.5);
-							
-							drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
+							else cube.rotateAbout(Y_AXIS, -2.5);
 							break;
 						
 						case SDLK_RIGHT:
 							if (translate) cube.translate(Vector3(0.25, 0.0, 0.0));
-							else cube.rotateAboutLocalY(2.5);
-							
-							drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
+							else cube.rotateAbout(Y_AXIS, 2.5);
 							break;
 						
 						case SDLK_UP:
 							if (translate) cube.translate(Vector3(0.0, -0.25, 0.0));
-							else cube.rotateAboutLocalX(2.5);
-							
-							drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
+							else cube.rotateAbout(X_AXIS, 2.5);
 							break;
 						
 						case SDLK_DOWN:
 							if (translate) cube.translate(Vector3(0.0, 0.25, 0.0));
-							else cube.rotateAboutLocalX(-2.5);
-							
-							drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
+							else cube.rotateAbout(X_AXIS, -2.5);
 							break;
 						
 						case SDLK_KP_PLUS:
 							if (translate) cube.translate(Vector3(0.0, 0.0, 0.25));
-							else cube.rotateAboutLocalZ(2.5);
-							
-							drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
+							else cube.rotateAbout(Z_AXIS, 2.5);
 							break;
 						
 						case SDLK_KP_MINUS:
@@ -492,21 +485,15 @@ int main(int argc, char** argv)
 									minZDistance = min(minZDistance, hypot(hypot(camLoc.x - p.x, camLoc.y - p.y), camLoc.z - p.z));
 								}
 								
-								cout << minZDistance << endl;
-								
 								if (minZDistance > 0.5) cube.translate(Vector3(0.0, 0.0, -0.25));
 							}
 							
-							else cube.rotateAboutLocalZ(-2.5);
-							
-							drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
+							else cube.rotateAbout(Z_AXIS, -2.5);
 							break;
 							
 						case SDLK_SPACE:
 							camLoc = cube.getCenter();
 							camLoc.z -= fabs(cube.point[0].z - cube.point[4].z) + 5.0;
-							
-							drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
 							break;
 							
 						case SDLK_r:
@@ -516,6 +503,8 @@ int main(int argc, char** argv)
 						default:
 							break;
 					}
+					
+					drawCube2D(perspectiveProjection(cube, camLoc, 400.0, 400.0), mainRenderer);
 					break;
 				
 				default:
